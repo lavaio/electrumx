@@ -122,7 +122,8 @@ class Prefetcher(object):
 
                 # Special handling for genesis block
                 if first == 0:
-                    blocks[0] = self.coin.genesis_block(blocks[0])
+                    #blocks[0] = self.coin.genesis_block(blocks[0])
+                    self.coin.genesis_block(blocks[0])
                     self.logger.info('verified genesis block with hash {}'
                                      .format(hex_hashes[0]))
 

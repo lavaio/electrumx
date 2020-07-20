@@ -80,7 +80,7 @@ class Env(EnvBase):
         self.cost_soft_limit = self.integer('COST_SOFT_LIMIT', 1000)
         self.cost_hard_limit = self.integer('COST_HARD_LIMIT', 10000)
         self.bw_unit_cost = self.integer('BANDWIDTH_UNIT_COST', 5000)
-        self.initial_concurrent = self.integer('INITIAL_CONCURRENT', 10)
+        self.initial_concurrent = self.integer('INITIAL_CONCURRENT', 100)
         self.request_sleep = self.integer('REQUEST_SLEEP', 2500)
         self.request_timeout = self.integer('REQUEST_TIMEOUT', 30)
         self.session_timeout = self.integer('SESSION_TIMEOUT', 600)
@@ -97,7 +97,7 @@ class Env(EnvBase):
         '''Return the maximum number of sessions to permit.  Normally this
         is MAX_SESSIONS.  However, to prevent open file exhaustion, ajdust
         downwards if running with a small open file rlimit.'''
-        env_value = self.integer('MAX_SESSIONS', 1000)
+        env_value = self.integer('MAX_SESSIONS', 10000)
         # No resource module on Windows
         try:
             import resource

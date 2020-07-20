@@ -1308,7 +1308,8 @@ class ElectrumX(SessionBase):
                 if msg:
                     self.logger.info(f'sent tx: {hex_hash}. and warned user to upgrade their '
                                      f'client from {self.client}')
-                    return msg
+                    return {'msg':msg, 'tx_hash':hex_hash} # cash version
+                    #return msg
 
             self.logger.info(f'sent tx: {hex_hash}')
             return hex_hash

@@ -130,7 +130,7 @@ class History(object):
     def flush(self):
         start_time = time.time()
         self.flush_count += 1
-        flush_id = pack_be_uint16(self.flush_count)
+        flush_id = pack_be_uint16(self.flush_count & 0xffff)
         unflushed = self.unflushed
 
         with self.db.write_batch() as batch:

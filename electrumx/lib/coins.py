@@ -505,6 +505,28 @@ class BitcoinDiamond(BitcoinSegwit, Coin):
     VALUE_PER_COIN = 10000000
     DESERIALIZER = lib_tx.DeserializerBitcoinDiamondSegWit
 
+class Lava(BitcoinSegwit, Coin):
+    NAME = "Lava"
+    SHORTNAME = "LV"
+    BASIC_HEADER_SIZE = 136
+    REORG_LIMIT = 1000
+    GENESIS_HASH = ('dfc8e3d348da67cf64fef22c927e593860465ada0546fa1719556958b95c7cf6')
+    PEERS = [
+        #'47.96.185.83 t50998 s50999',
+    ]
+    # block header add new field
+    HDR_V4_SIZE = 156
+    HDR_V4_HEIGHT = 67584
+    HDR_V4_START_OFFSET = HDR_V4_HEIGHT * BASIC_HEADER_SIZE
+
+    @classmethod
+    def static_header_offset(cls, height):
+        assert cls.STATIC_BLOCK_HEADERS
+        if height >= cls.HDR_V4_HEIGHT:
+            relative_v4_offset = (height - cls.HDR_V4_HEIGHT) * cls.HDR_V4_SIZE
+            return cls.HDR_V4_START_OFFSET + relative_v4_offset
+        else:
+            return height * cls.BASIC_HEADER_SIZE
 
 class Emercoin(Coin):
     NAME = "Emercoin"
@@ -643,6 +665,31 @@ class BitcoinSegwitRegtest(BitcoinSegwitTestnet):
     TX_COUNT = 1
     TX_COUNT_HEIGHT = 1
 
+class LavaTestnet(BitcoinSegwitTestnet):
+
+    NAME = "LavaTestnet"
+    SHORTNAME = "LV"
+    NET = "testnet"
+    BASIC_HEADER_SIZE = 136
+    REORG_LIMIT = 1000
+    GENESIS_HASH = ('62ca4ef31a124cedd557a97fd59f623ae7eff424a15a13304dd44ec2263a9b03')
+    PEER_DEFAULT_PORTS = {'t': '20998', 's': '20999'}
+    PEERS = [
+        #'47.96.185.83 t50998 s50999',
+    ]
+    # block header add new field
+    HDR_V4_SIZE = 156
+    HDR_V4_HEIGHT = 13115
+    HDR_V4_START_OFFSET = HDR_V4_HEIGHT * BASIC_HEADER_SIZE
+
+    @classmethod
+    def static_header_offset(cls, height):
+        assert cls.STATIC_BLOCK_HEADERS
+        if height >= cls.HDR_V4_HEIGHT:
+            relative_v4_offset = (height - cls.HDR_V4_HEIGHT) * cls.HDR_V4_SIZE
+            return cls.HDR_V4_START_OFFSET + relative_v4_offset
+        else:
+            return height * cls.BASIC_HEADER_SIZE
 
 class BitcoinNolnet(BitcoinCash):
     '''Bitcoin Unlimited nolimit testnet.'''
