@@ -389,7 +389,12 @@ class BlockProcessor(object):
 
         for block in blocks:
             height += 1
-            undo_info = self.advance_txs(block.transactions)
+            try:
+                undo_info = self.advance_txs(block.transactions)
+            except:
+                import traceback
+                traceback.print_exc()
+                raise
             if height >= min_height:
                 self.undo_infos.append((undo_info, height))
                 self.db.write_raw_block(block.raw, height)

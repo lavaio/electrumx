@@ -36,7 +36,7 @@ from electrumx.lib.util import (
     unpack_le_int32_from, unpack_le_int64_from, unpack_le_uint16_from,
     unpack_be_uint16_from,
     unpack_le_uint32_from, unpack_le_uint64_from, pack_le_int32, pack_varint,
-    pack_le_uint32, pack_le_int64, pack_varbytes,
+    pack_le_uint32, pack_le_int64, pack_varbytes, unpack_be_uint64_from,
 )
 
 ZERO = bytes(32)
@@ -270,6 +270,113 @@ class DeserializerSegWit(Deserializer):
     def read_tx_and_vsize(self):
         tx, _tx_hash, vsize = self._read_tx_parts()
         return tx, vsize
+
+
+class DeserializerLavaSegWit(DeserializerSegWit):
+    TX_VERSION_CA = 3
+    OUTPOINT_INDEX_MASK = 0x7fffffff
+    OUTPOINT_ISSUANCE_FLAG = (1 << 31);
+
+    def _read_tx_parts(self):
+        '''Return a (deserialized TX, tx_hash, vsize) tuple.'''
+        start = self.cursor
+        marker = self.binary[self.cursor + 4]
+        if marker:
+            tx = super(DeserializerSegWit, self).read_tx()
+            tx_hash = self.TX_HASH_FN(self.binary[start:self.cursor])
+            return tx, tx_hash, self.binary_length
+
+        # Ugh, this is nasty.
+        version = self._read_le_int32()
+        orig_ser = self.binary[start:self.cursor]
+
+        marker = self._read_byte()
+        flag = self._read_byte()
+
+        start = self.cursor
+        read_inputs = self._read_inputs_ca if version == self.TX_VERSION_CA else self._read_inputs
+        read_outputs = self._read_outputs_ca if version == self.TX_VERSION_CA else self._read_outputs
+        inputs = read_inputs()
+        outputs = read_outputs()
+        orig_ser += self.binary[start:self.cursor]
+
+        base_size = self.cursor - start
+        witness = self._read_witness(len(inputs))
+        proof = self._read_ca_proof(len(inputs), len(outputs)) if flag & 0x02 else None
+
+        start = self.cursor
+        locktime = self._read_le_uint32()
+        orig_ser += self.binary[start:self.cursor]
+        vsize = (3 * base_size + self.binary_length) // 4
+
+        return TxSegWit(version, marker, flag, inputs, outputs, witness,
+                        locktime), self.TX_HASH_FN(orig_ser), vsize
+
+    def _read_inputs_ca(self):
+        read_input = self._read_input_ca
+        return [read_input() for i in range(self._read_varint())]
+
+    def _read_input_ca(self):
+        prev_hash = self._read_nbytes(32)
+        prev_idx = self._read_le_uint32()
+        with_issuance = (prev_idx != -1) and (prev_idx & self.OUTPOINT_ISSUANCE_FLAG)
+        prev_idx = prev_idx & self.OUTPOINT_INDEX_MASK;
+        script = self._read_varbytes()
+        sequence = self._read_le_uint32()
+        if with_issuance:
+            issuance = self._read_issuance()
+
+        #TODO: return issuance
+        return TxInput(
+            prev_hash,
+            prev_idx,
+            script,
+            sequence
+        )
+
+    def _read_outputs_ca(self):
+        read_output = self._read_output_ca
+        return [read_output() for i in range(self._read_varint())]
+
+    def _read_output_ca(self):
+        value = self._read_le_int64()
+        pk_script = self._read_varbytes()
+        flag = self._read_byte()
+        if flag == 1:
+            asset = self._read_confidential_commitment()
+            value_ca = self._read_confidential_commitment(9)
+            nonce = self._read_confidential_commitment()
+
+        return TxOutput(
+            value,
+            pk_script
+        )
+
+    def _read_ca_proof(self, infields, outfields):
+        read_ca_proof_field = self._read_ca_proof_field
+        return [read_ca_proof_field() for i in range(infields)], [read_ca_proof_field() for i in range(outfields)]
+
+    def _read_ca_proof_field(self):
+        read_varint = self._read_varint
+        read_nbytes = self._read_nbytes
+        proof1, proof2 = read_nbytes(read_varint()), read_nbytes(read_varint())
+        return [proof1, proof2]
+
+    def _read_issuance(self):
+        asset_blinding_nonce = self._read_nbytes(32)
+        asset_entropy = self._read_nbytes(32)
+        asset_amount = self._read_confidential_commitment(9)
+        inflation_keys = self._read_confidential_commitment(9)
+        return asset_blinding_nonce, asset_entropy, asset_amount, inflation_keys
+
+    def _read_confidential_commitment(self, explicit_size=33):
+        prefixes = 2, 3, 8, 9, 10, 11
+        version = self._read_byte()
+        if version in prefixes:
+            return self._read_nbytes(32)
+        if version == 1:
+            return self._read_nbytes(explicit_size - 1)
+        return None
 
 
 class DeserializerAuxPow(Deserializer):

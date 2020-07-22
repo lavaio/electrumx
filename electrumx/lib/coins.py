@@ -507,6 +507,7 @@ class BitcoinDiamond(BitcoinSegwit, Coin):
 
 class Lava(BitcoinSegwit, Coin):
     NAME = "Lava"
+    DESERIALIZER = lib_tx.DeserializerLavaSegWit
     SHORTNAME = "LV"
     BASIC_HEADER_SIZE = 136
     REORG_LIMIT = 1000
@@ -668,11 +669,12 @@ class BitcoinSegwitRegtest(BitcoinSegwitTestnet):
 class LavaTestnet(BitcoinSegwitTestnet):
 
     NAME = "LavaTestnet"
+    DESERIALIZER = lib_tx.DeserializerLavaSegWit
     SHORTNAME = "LV"
     NET = "testnet"
     BASIC_HEADER_SIZE = 136
     REORG_LIMIT = 1000
-    GENESIS_HASH = ('62ca4ef31a124cedd557a97fd59f623ae7eff424a15a13304dd44ec2263a9b03')
+    GENESIS_HASH = ('54746281650914f19f4b4e80002c4a9b7ab6e2334b25d6e141bc9130ea4ec572')
     PEER_DEFAULT_PORTS = {'t': '20998', 's': '20999'}
     PEERS = [
         #'47.96.185.83 t50998 s50999',
